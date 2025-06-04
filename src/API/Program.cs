@@ -1,18 +1,51 @@
-using Application;
+using API;
+using API.Data;
 using Microsoft.EntityFrameworkCore;
-using Models.DTOs;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using API.Helpers.Options;
+using API.Services;
+using API.Services.Tokens;
+using Microsoft.AspNetCore.Identity;
 using Models.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var jwtOptionsSection = builder.Configuration.GetSection("JwtOptions");
+builder.Services.Configure<JwtOptions>(jwtOptionsSection);
+var jwtOptions = jwtOptionsSection.Get<JwtOptions>();
+builder.Services.AddControllers();
+
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var key = Encoding.UTF8.GetBytes(jwtOptions.Secret);
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidAudience = jwtOptions.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(key)
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<ITokenService, TokenService>();
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
 builder.Services.AddDbContext<_2019sbdContext>(options => options.UseSqlServer(connectionString));
-
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IPasswordHasher<Account>, PasswordHasher<Account>>();
+
 
 var app = builder.Build();
 
@@ -21,38 +54,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapGet("/api/devices", (IDeviceService service) => Results.Ok(service.GetAll()));
-
-app.MapGet("/api/devices/{id:int}", (int id, IDeviceService service) =>
-{
-    var result = service.GetById(id);
-    return result == null ? Results.NotFound() : Results.Ok(result);
-});
-
-app.MapPost("/api/devices", async (DeviceCreateRequest device, IDeviceService service) =>
-{
-    var created = service.Create(device);
-    return Results.Created($"/api/devices/{created.Id}", created);
-});
-
-app.MapPut("/api/devices/{id:int}", async (int id, DeviceCreateRequest device, IDeviceService service) =>
-{
-    var updated = service.Update(id, device);
-    return updated == null ? Results.NotFound() : Results.Ok(updated);
-});
-
-app.MapDelete("/api/devices/{id:int}", (int id, IDeviceService service) =>
-{
-    return service.Delete(id) ? Results.NoContent() : Results.NotFound();
-});
-
-app.MapGet("/api/employees", (IEmployeeService service) => Results.Ok(service.GetAll()));
-
-app.MapGet("/api/employees/{id:int}", (int id, IEmployeeService service) =>
-{
-    var result = service.GetById(id);
-    return result == null ? Results.NotFound() : Results.Ok(result);
-});
+app.MapControllers();
 
 app.Run("http://localhost:5300");

@@ -1,7 +1,5 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "src\Application\Application.csproj", "{4FAAE3CB-3B61-406B-84CF-D86489863E1A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Models", "src\Models\Models.csproj", "{C02684F4-F9AF-4561-986C-3823B863EC37}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API", "src\API\API.csproj", "{BB06E6B2-B852-4137-84D0-3FBD71E76005}"
@@ -12,10 +10,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4FAAE3CB-3B61-406B-84CF-D86489863E1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4FAAE3CB-3B61-406B-84CF-D86489863E1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4FAAE3CB-3B61-406B-84CF-D86489863E1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4FAAE3CB-3B61-406B-84CF-D86489863E1A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C02684F4-F9AF-4561-986C-3823B863EC37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C02684F4-F9AF-4561-986C-3823B863EC37}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C02684F4-F9AF-4561-986C-3823B863EC37}.Release|Any CPU.ActiveCfg = Release|Any CPU

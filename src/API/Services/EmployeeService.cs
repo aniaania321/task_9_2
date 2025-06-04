@@ -1,9 +1,8 @@
 ﻿using API.Data;
 using Microsoft.EntityFrameworkCore;
 using Models.DTOs;
-using Models.Models;
 
-namespace Application;
+namespace API;
 
 public class EmployeeService : IEmployeeService
 {
