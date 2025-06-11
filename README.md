@@ -10,4 +10,4 @@ Also there need to be the jwt options section included:
     "ExpiryMinutes": 60
   }
 
-  
+  To use middleware there needs to be a json file with the validation rules included in the project directory named validationRules.json

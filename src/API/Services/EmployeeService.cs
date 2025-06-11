@@ -7,39 +7,35 @@ namespace API;
 public class EmployeeService : IEmployeeService
 {
     private readonly _2019sbdContext _context;
-    public EmployeeService(_2019sbdContext context)
-    {
-        _context = context;
-    }
+    public EmployeeService(_2019sbdContext context) => _context = context;
 
     public List<EmployeeListDto> GetAll() =>
-        _context.Employees
-            .Include(e => e.Person)
+        _context.Employees.Include(e => e.Person)
             .Select(e => new EmployeeListDto
             {
                 Id = e.Id,
                 FullName = e.Person.FirstName + " " + e.Person.LastName
             }).ToList();
 
-    public EmployeeDetailDto GetById(int id)
+    public EmployeeDetailsDto GetById(int id)
     {
-        var e = _context.Employees
-            .Include(e => e.Person)
-            .Include(e => e.Position)
-            .FirstOrDefault(e => e.Id == id);
-
+        var e = _context.Employees.Include(e => e.Person).Include(e => e.Position).FirstOrDefault(e => e.Id == id);
         if (e == null) return null;
 
-        return new EmployeeDetailDto
+        return new EmployeeDetailsDto
         {
-            FirstName = e.Person.FirstName,
-            MiddleName = e.Person.MiddleName,
-            LastName = e.Person.LastName,
-            Email = e.Person.Email,
-            PhoneNumber = e.Person.PhoneNumber,
+            Person = new PersonDto
+            {
+                PassportNumber = e.Person.PassportNumber,
+                FirstName = e.Person.FirstName,
+                MiddleName = e.Person.MiddleName,
+                LastName = e.Person.LastName,
+                PhoneNumber = e.Person.PhoneNumber,
+                Email = e.Person.Email
+            },
             Salary = e.Salary,
-            HireDate = e.HireDate,
-            Position = new PositionDto { Id = e.Position.Id, Name = e.Position.Name }
+            Position = e.Position.Name,
+            HireDate = e.HireDate
         };
     }
 }

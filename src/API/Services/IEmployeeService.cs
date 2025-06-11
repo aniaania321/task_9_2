@@ -5,5 +5,5 @@ namespace API;
 public interface IEmployeeService
 {
     List<EmployeeListDto> GetAll();
-    EmployeeDetailDto GetById(int id);
+    EmployeeDetailsDto GetById(int id);
 }

@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 using API.Data;
-using Microsoft.EntityFrameworkCore;
 using Models.DTOs;
 using Models.Models;
 
@@ -26,26 +25,15 @@ public class DeviceService : IDeviceService
         if (d == null) return null;
 
         var deviceType = _context.DeviceTypes.Find(d.DeviceTypeId);
-        var currentAssignment = _context.DeviceEmployees
-            .Include(de => de.Employee)
-            .ThenInclude(e => e.Person)
-            .FirstOrDefault(de => de.DeviceId == d.Id && de.ReturnDate == null);
-
         var fixedJson = FixJson(d.AdditionalProperties ?? "{}");
-        var additionalProperties = JsonSerializer.Deserialize<Dictionary<string, string>>(fixedJson) ?? new Dictionary<string, string>();
+        var additionalProps = JsonSerializer.Deserialize<Dictionary<string, string>>(fixedJson) ?? new();
 
-        return new DeviceDetailsDto()
+        return new DeviceDetailsDto
         {
-            Id = d.Id,
             Name = d.Name,
             IsEnabled = d.IsEnabled,
-            DeviceTypeName = deviceType?.Name,
-            AdditionalProperties = additionalProperties,
-            CurrentEmployee = currentAssignment != null ? new CurrentEmployeeDto
-            {
-                Id = currentAssignment.Employee.Id,
-                FullName = $"{currentAssignment.Employee.Person.FirstName} {currentAssignment.Employee.Person.LastName}"
-            } : null
+            Type = deviceType?.Name,
+            AdditionalProperties = additionalProps
         };
     }
 
@@ -56,14 +44,21 @@ public class DeviceService : IDeviceService
             Name = request.Name,
             IsEnabled = request.IsEnabled,
             AdditionalProperties = JsonSerializer.Serialize(request.AdditionalProperties),
-            DeviceTypeId = request.DeviceTypeId
+            DeviceTypeId = request.TypeId
         };
 
         _context.Devices.Add(d);
         _context.SaveChanges();
 
-        return new DeviceDetailsDto { Id = d.Id, Name = d.Name };
+        return new DeviceDetailsDto
+        {
+            Name = d.Name,
+            IsEnabled = d.IsEnabled,
+            Type = _context.DeviceTypes.Find(d.DeviceTypeId)?.Name,
+            AdditionalProperties = JsonSerializer.Deserialize<Dictionary<string, string>>(FixJson(d.AdditionalProperties)) ?? new()
+        };
     }
+
     
     public DeviceDetailsDto Update(int id, DeviceCreateRequest request)
     {
@@ -73,13 +68,20 @@ public class DeviceService : IDeviceService
         existing.Name = request.Name;
         existing.IsEnabled = request.IsEnabled;
         existing.AdditionalProperties = JsonSerializer.Serialize(request.AdditionalProperties);
-        existing.DeviceTypeId = request.DeviceTypeId;
+        existing.DeviceTypeId = request.TypeId;
 
         _context.Devices.Update(existing);
         _context.SaveChanges();
 
-        return new DeviceDetailsDto { Id = existing.Id, Name = existing.Name };
+        return new DeviceDetailsDto
+        {
+            Name = existing.Name,
+            IsEnabled = existing.IsEnabled,
+            Type = _context.DeviceTypes.Find(existing.DeviceTypeId)?.Name,
+            AdditionalProperties = JsonSerializer.Deserialize<Dictionary<string, string>>(FixJson(existing.AdditionalProperties)) ?? new()
+        };
     }
+
     
     public bool Delete(int id)
     {

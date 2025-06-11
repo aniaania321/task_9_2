@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 namespace Models.DTOs;
 
@@ -9,9 +10,9 @@ public class DeviceCreateRequest
     [Required]
     public bool IsEnabled { get; set; }
     [Required]
-    public Dictionary<string, string> AdditionalProperties { get; set; }
+    public JsonElement AdditionalProperties { get; set; }
     [Required]
-    public int? DeviceTypeId { get; set; }
+    public int? TypeId { get; set; }
 
     
 }

@@ -148,12 +148,14 @@ public partial class _2019sbdContext : DbContext
             entity.HasIndex(e => e.Username).IsUnique();
             entity.Property(e => e.Username).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Password).IsRequired().HasMaxLength(256);
+
             entity.HasOne(a => a.Employee)
                 .WithMany()
                 .HasForeignKey(a => a.EmployeeId)
                 .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasOne(a => a.Role)
-                .WithMany()
+                .WithMany(r => r.Accounts)
                 .HasForeignKey(a => a.RoleId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
@@ -164,6 +166,7 @@ public partial class _2019sbdContext : DbContext
             entity.HasIndex(e => e.Name).IsUnique();
             entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
         });
+
         
         OnModelCreatingPartial(modelBuilder);
     }

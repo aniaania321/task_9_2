@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using API.Helpers.Middleware;
 using API.Helpers.Options;
 using API.Services;
 using API.Services.Tokens;
@@ -57,6 +58,8 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<DeviceMiddleware>();
+
 
 app.MapControllers();
 

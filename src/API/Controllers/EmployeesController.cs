@@ -4,79 +4,118 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using API.Data;
+using Models.DTOs;
 using Models.Models;
 
 namespace API;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AccountsController : ControllerBase
+public class EmployeesController : ControllerBase
 {
     private readonly _2019sbdContext _context;
     private readonly IPasswordHasher<Account> _passwordHasher;
+    private readonly ILogger<EmployeesController> _logger;
 
-    public AccountsController(_2019sbdContext context, IPasswordHasher<Account> passwordHasher)
+    public EmployeesController(
+        _2019sbdContext context,
+        IPasswordHasher<Account> passwordHasher,
+        ILogger<EmployeesController> logger)
     {
         _context = context;
         _passwordHasher = passwordHasher;
-    }
+        _logger = logger;
+    } 
 
     [HttpGet("profile")]
     [Authorize]
     public async Task<IActionResult> GetMyAccount()
     {
-        var accountId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        _logger.LogInformation("GET /api/employees/profile started");
 
-        var account = await _context.Accounts
-            .Include(a => a.Employee)
-                .ThenInclude(e => e.Person)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(a => a.Id == accountId);
-
-        if (account == null || account.Employee == null || account.Employee.Person == null)
-            return NotFound();
-
-        var person = account.Employee.Person;
-
-        return Ok(new
+        try
         {
-            account.Id,
-            account.Username,
-            person.FirstName,
-            person.MiddleName,
-            person.LastName,
-            person.Email,
-            person.PhoneNumber
-        });
+            var accountIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(accountIdClaim, out var accountId))
+            {
+                _logger.LogError("Failed to parse account ID from claim.");
+                return Forbid();
+            }
+
+            var account = await _context.Accounts
+                .Include(a => a.Employee)
+                    .ThenInclude(e => e.Person)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Id == accountId);
+
+            if (account?.Employee?.Person == null)
+            {
+                _logger.LogError("Employee or Person not found for account ID {AccountId}", accountId);
+                return NotFound(new { message = "Associated employee or person record not found." });
+            }
+
+            _logger.LogInformation("Profile data retrieved for account ID {AccountId}", accountId);
+
+            var person = account.Employee.Person;
+            return Ok(new PersonDto
+            {
+                PassportNumber = person.PassportNumber,
+                FirstName = person.FirstName,
+                MiddleName = person.MiddleName,
+                LastName = person.LastName,
+                Email = person.Email,
+                PhoneNumber = person.PhoneNumber
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception occurred while retrieving profile.");
+            return StatusCode(500, new { message = "Failed to retrieve profile.", detail = ex.Message });
+        }
     }
 
     [HttpPut("profile")]
     [Authorize]
-    public async Task<IActionResult> UpdateMyAccount([FromBody] Account update)
+    public async Task<IActionResult> UpdateMyAccount([FromBody] PersonDto update)
     {
-        var accountId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        _logger.LogInformation("PUT /api/employees/profile started");
 
-        var account = await _context.Accounts
-            .Include(a => a.Employee)
-                .ThenInclude(e => e.Person)
-            .FirstOrDefaultAsync(a => a.Id == accountId);
+        try
+        {
+            var accountIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(accountIdClaim, out var accountId))
+            {
+                _logger.LogError("Failed to parse account ID from claim.");
+                return Forbid();
+            }
 
-        if (account == null || account.Employee == null || account.Employee.Person == null)
-            return NotFound();
+            var account = await _context.Accounts
+                .Include(a => a.Employee)
+                    .ThenInclude(e => e.Person)
+                .FirstOrDefaultAsync(a => a.Id == accountId);
 
-        account.Username = update.Username;
+            if (account?.Employee?.Person == null)
+            {
+                _logger.LogError("Employee or Person not found for account ID {AccountId}", accountId);
+                return NotFound(new { message = "Associated employee or person record not found." });
+            }
 
-        if (!string.IsNullOrWhiteSpace(update.Password))
-            account.Password = _passwordHasher.HashPassword(account, update.Password);
+            var person = account.Employee.Person;
+            person.FirstName = update.FirstName ?? person.FirstName;
+            person.MiddleName = update.MiddleName;
+            person.LastName = update.LastName ?? person.LastName;
+            person.Email = update.Email ?? person.Email;
+            person.PhoneNumber = update.PhoneNumber ?? person.PhoneNumber;
 
-        account.Employee.Person.FirstName = update.Employee?.Person?.FirstName ?? account.Employee.Person.FirstName;
-        account.Employee.Person.MiddleName = update.Employee?.Person?.MiddleName;
-        account.Employee.Person.LastName = update.Employee?.Person?.LastName ?? account.Employee.Person.LastName;
-        account.Employee.Person.Email = update.Employee?.Person?.Email ?? account.Employee.Person.Email;
-        account.Employee.Person.PhoneNumber = update.Employee?.Person?.PhoneNumber ?? account.Employee.Person.PhoneNumber;
+            await _context.SaveChangesAsync();
 
-        await _context.SaveChangesAsync();
-
-        return Ok(new { account.Id, account.Username });
+            _logger.LogInformation("Successfully updated profile for account ID {AccountId}", accountId);
+            return Ok(new { message = "Profile updated successfully." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception occurred while updating profile.");
+            return StatusCode(500, new { message = "Failed to update profile.", detail = ex.Message });
+        }
     }
 }
